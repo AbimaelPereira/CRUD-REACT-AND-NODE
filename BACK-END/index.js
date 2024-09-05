@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+const cors = require('cors');
 require('dotenv').config();
 const port = process.env.PORT || 3000;
 const { format } = require('date-fns');
@@ -9,6 +10,7 @@ const TABLE = "app_alunos";
 
 const Joi = require('joi');
 app.use(express.json());
+app.use(cors());
 
 const alunoSchema = Joi.object({
     nome: Joi.string().required().messages({
@@ -34,20 +36,48 @@ const alunoSchema = Joi.object({
     })
 });
 
+const sendResponse = (res, { status, message, error, dados = [], errorCode = null }) => {
+    return res.status(status).json({
+        message,
+        error,
+        errorCode,
+        dados
+    });
+};
 
 app.get('/', (req, res) => {
-    res.status(200).json({
-        messagem: "Bem-vindo a API do projeto de Avaliação Delta Global!"
+    return sendResponse(res, {
+        status: 200,
+        message: 'Bem-vindo a API do projeto de Avaliação Delta Global!',
+        error: false
     });
 });
 
 app.get('/alunos', (req, res) => {
     db.query(`SELECT * FROM ${TABLE}`, (err, results) => {
         if (err) {
-            res.status(500).send('Erro ao consultar o banco de dados.');
-            return;
+            return sendResponse(res, {
+                status: 500,
+                message: 'Erro ao consultar o banco de dados.',
+                error: true,
+                errorCode: 'DB_ERROR'
+            });
         }
-        res.json(results);
+
+        if (results.length === 0) {
+            return sendResponse(res, {
+                status: 404,
+                message: "Nenhum aluno encontrado!",
+                error: false
+            });
+        }
+
+        return sendResponse(res, {
+            status: 200,
+            message: "Dados encontrados!",
+            error: false,
+            dados: results
+        });
     });
 });
 
@@ -56,10 +86,28 @@ app.get('/alunos/:id', (req, res) => {
 
     db.query(`SELECT * FROM ${TABLE} WHERE id = ?`, [id], (err, results) => {
         if (err) {
-            res.status(500).send('Erro ao consultar o banco de dados.');
-            return;
+            return sendResponse(res, {
+                status: 500,
+                message: 'Erro ao consultar o banco de dados.',
+                error: true,
+                errorCode: 'DB_ERROR'
+            });
         }
-        res.json(results);
+
+        if (results.length === 0) {
+            return sendResponse(res, {
+                status: 404,
+                message: 'Aluno não encontrado.',
+                error: false
+            });
+        }
+
+        return sendResponse(res, {
+            status: 200,
+            message: "Aluno encontrado!",
+            error: false,
+            dados: results[0]
+        });
     });
 });
 
@@ -144,7 +192,7 @@ app.put('/alunos/:id', async (req, res) => {
 app.delete('/alunos/:id', async (req, res) => {
     const { id } = req.params;
 
-    
+
     const query = `DELETE FROM ${TABLE} WHERE id = ?`;
     try {
         const executeQuery = await db.execute(query, [id]);
