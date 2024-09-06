@@ -26,6 +26,9 @@ function notifyUser(message, type) {
     case 'error':
       toast.error(message, options);
       break;
+    case 'warn':
+      toast.warn(message, options);
+      break;
     default:
       toast(message, options);
       break;

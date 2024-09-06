@@ -72,7 +72,7 @@ function Modal({ carrega_alunos, notifyUser, ...props }) {
             if (new_image) {
                 if (aluno.image) {
                     dados_save = { ...dados_save, old_image: dados_save.image, image: new_image };
-                }else{
+                } else {
                     dados_save = { ...dados_save, image: new_image };
                 }
             }
@@ -106,10 +106,17 @@ function Modal({ carrega_alunos, notifyUser, ...props }) {
         }
     };
 
-
     const changeInputFile = (e) => {
         const file = e.target.files[0];
         if (file) {
+            const validExtensions = ['.jpg', '.jpeg', '.png'];
+            const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+
+            if (!validExtensions.includes(fileExtension)) {
+                notifyUser("Por favor, selecione uma imagem com extensão JPG, JPEG ou PNG.", 'warn');
+                return;
+            }
+
             setImageFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
